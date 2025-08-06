@@ -1,32 +1,37 @@
+## Makefile for Pipegram Flask API
+##
+## This Makefile defines shortcuts for common tasks. Each command
+## must be indented with a TAB character (\t). Do not replace the
+## leading TABs with spaces or the GNU Make parser will error with
+## “missing separator”.
+
 .PHONY: install run test build compose-up clean
 
-# Create virtual environment and install dependencies
+## Create a virtual environment and install dependencies
 install:
-	python3 -m venv .venv && \
-	. .venv/bin/activate && \
+	python -m venv .venv && \
+	. .venv/Scripts/activate && \
 	pip install -r requirements.txt
 
-# Run the application using the built‑in server (development only)
+## Run the application using the built‑in Flask server (development only)
 run:
 	python run.py
 
-# Run the test suite with pytest
+## Run the test suite with pytest
 test:
 	pytest -x -s
 
-# Build the Docker image
+## Build the Docker image
 build:
 	docker build -t pipegram-flask .
 
-# Bring up the application with docker-compose
+## Bring up the application using Docker Compose.
+## This rule assumes Docker Compose V2 syntax (`docker compose`).
+## If your environment only has the older `docker-compose`, run that
+## command manually instead of using this target.
 compose-up:
-    # Use the new `docker compose` (space) syntax; fall back to `docker-compose` if needed.
-    @if command -v docker compose >/dev/null 2>&1; then \
-      docker compose up --build; \
-    else \
-      docker-compose up --build; \
-    fi
+	docker compose up --build
 
-# Remove virtual environment
+## Remove the local virtual environment
 clean:
-	rm -rf .venv
+	rmdir /S /Q .venv
