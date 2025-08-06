@@ -27,7 +27,28 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES: timedelta = timedelta(hours=12)
 
     # Swagger / Flasgger settings
+    # OpenAPI / Swagger configuration for Flasgger
+    #
+    # The Flasgger extension uses the values defined in this mapping to
+    # generate the base OpenAPI specification.  By default Flasgger will
+    # generate a Swagger 2.0 spec (i.e. include a top‑level ``swagger`` key).
+    # However, this project defines its own OpenAPI 3.0 template in
+    # ``app/swagger.py``.  To avoid mixing ``swagger`` and ``openapi`` keys in
+    # the resulting document—which leads to the error shown in the Swagger UI
+    # (“swagger and openapi fields cannot be present in the same definition”)—
+    # we explicitly set ``openapi`` here.  When ``openapi`` is present,
+    # Flasgger suppresses the default ``swagger`` key and uses the given
+    # OpenAPI version instead.  The ``version`` field is informational and
+    # should match the version specified in the template.
     SWAGGER = {
         "title": "Pipegram Flask API",
+        # Use the Swagger UI v3 assets
         "uiversion": 3,
+        # Force OpenAPI 3.x generation instead of Swagger 2.0
+        "openapi": "3.0.3",
+        # Application version exposed in the generated documentation
+        "version": "1.0.0",
+        # Optionally customise the route where the UI is served; Flasgger
+        # defaults to ``/apidocs`` when unspecified.  Uncomment to change.
+        # "specs_route": "/api-docs",
     }
