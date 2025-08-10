@@ -1,26 +1,39 @@
-"""
-Centralised error handling.
-
-This module provides functions for registering error handlers that
-convert uncaught exceptions and HTTP exceptions into JSON responses.
-By standardising error responses, clients can rely on consistent
-error formats.
-"""
-from flask import jsonify
-from werkzeug.exceptions import HTTPException
+from flask import Flask, jsonify
 
 
-def register_error_handlers(app):
-    """Register handlers for HTTP and unhandled exceptions."""
+class UnauthorizedError(Exception):
+    pass
 
-    @app.errorhandler(HTTPException)
-    def http_error(exc):
-        # Render the error name and description as JSON
-        response = {"error": exc.name, "description": exc.description}
-        return jsonify(response), exc.code
+
+class ForbiddenError(Exception):
+    pass
+
+
+class BadRequestError(Exception):
+    pass
+
+
+class ResourceNotFoundError(Exception):
+    pass
+
+
+def register_error_handlers(app: Flask) -> None:
+    @app.errorhandler(BadRequestError)
+    def handle_bad_request(err):
+        return jsonify({"error": str(err)}), 400
+
+    @app.errorhandler(ResourceNotFoundError)
+    def handle_not_found(err):
+        return jsonify({"error": str(err)}), 404
+
+    @app.errorhandler(UnauthorizedError)
+    def handle_unauthorized(err):
+        return jsonify({"error": str(err)}), 401
+
+    @app.errorhandler(ForbiddenError)
+    def handle_forbidden(err):
+        return jsonify({"error": str(err)}), 403
 
     @app.errorhandler(Exception)
-    def unhandled(exc):
-        # Log the exception and hide internal details from the client
-        app.logger.exception(exc)
-        return jsonify({"error": "Internal Server Error"}), 500
+    def handle_generic(err):
+        return jsonify({"error": str(err)}), 500

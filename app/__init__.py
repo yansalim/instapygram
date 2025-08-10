@@ -1,37 +1,46 @@
-"""
-Application factory and initialisation.
-
-This module defines `create_app`, following the Flask application factory
-pattern. It instantiates the Flask app, loads configuration, registers
-extensions, sets up Swagger documentation, registers blueprints and
-error handlers.
-"""
 from flask import Flask
-
-from .config import Config
-from .extensions import init_extensions
-from .routes import register_blueprints
+from flasgger import Swagger
+from asgiref.wsgi import WsgiToAsgi
 from .errors import register_error_handlers
-from .swagger import init_swagger
 
 
 def create_app() -> Flask:
-    """Create and configure a new Flask application instance."""
     app = Flask(__name__)
 
-    # Load config values from environment variables or defaults
-    app.config.from_object(Config)
+    app.config.setdefault("SWAGGER", {
+        "title": "Pipegram (Flask)",
+        "uiversion": 3,
+        "openapi": "3.0.0",
+        "components": {
+            "securitySchemes": {
+                "bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+            }
+        },
+        "security": [{"bearerAuth": []}],
+    })
 
-    # Initialise third‑party extensions (JWT, etc.)
-    init_extensions(app)
+    Swagger(app)
 
-    # Set up Swagger UI
-    init_swagger(app)
+    from .routes.auth import bp as auth_bp
+    from .routes.post import bp as post_bp
+    from .routes.dm import bp as dm_bp
+    from .routes.profile import bp as profile_bp
+    from .routes.stories import bp as stories_bp
 
-    # Register blueprints for each API domain
-    register_blueprints(app)
+    app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(post_bp, url_prefix="/post")
+    app.register_blueprint(dm_bp, url_prefix="/dm")
+    app.register_blueprint(profile_bp, url_prefix="/profile")
+    app.register_blueprint(stories_bp, url_prefix="/stories")
 
-    # Register error handlers after blueprints
+    @app.get("/")
+    def root():
+        return "🚀 API do Instagram não oficial (Flask) está rodando!"
+
     register_error_handlers(app)
 
     return app
+
+
+# ASGI wrapper para Uvicorn
+app = WsgiToAsgi(create_app())

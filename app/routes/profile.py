@@ -1,98 +1,102 @@
-"""
-Profile endpoints.
-
-This blueprint defines endpoints to retrieve public profile details
-about a given username and to update the biography and/or profile
-picture of the logged in user. All endpoints require a valid admin
-token.
-"""
 from flask import Blueprint, request, jsonify
-from werkzeug.exceptions import BadRequest
+from pydantic import BaseModel
+from typing import Optional
+import base64
+import requests
+from ..errors import BadRequestError
+from ..middleware import admin_auth_required
+from ..services.instagram_client import resume_session
 
-from utils.validators import expect_json
-from utils.media import get_buffer_from_source
-from utils.admin import admin_required
-from services.instagram_client import get_client
+bp = Blueprint("profile", __name__)
 
 
-profile_bp = Blueprint("profile", __name__)
+class UpdateBioBody(BaseModel):
+    username: str
+    bio: Optional[str] = None
+    url: Optional[str] = None
+    base64: Optional[str] = None
 
 
-@profile_bp.route("/<target_username>", methods=["GET"])
-@admin_required
-def public_profile(target_username):
-    """Get the public profile information of another user.
+class GetProfileBody(BaseModel):
+    username: str
 
+
+@bp.post("/update-bio")
+@admin_auth_required
+async def update_bio():
+    """Atualizar bio e foto de perfil
     ---
-    tags:
-      - Profile
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: target_username
-        required: true
-        schema:
-          type: string
-      - in: query
-        name: username
-        required: true
-        schema:
-          type: string
-    responses:
-      200:
-        description: The user information.
-    """
-    username = request.args.get("username")
-    if not username:
-        raise BadRequest("username é obrigatório")
-    ig = get_client(username)
-    info = ig.user_info_by_username(target_username)
-    return jsonify(info.dict())
-
-
-@profile_bp.route("/update-bio", methods=["POST"])
-@admin_required
-@expect_json(["username"])
-def update_bio():
-    """Update the biography and/or profile picture of the logged in user.
-
-    ---
-    tags:
-      - Profile
-    security:
-      - bearerAuth: []
+    tags: [Profile]
     requestBody:
       required: true
       content:
         application/json:
           schema:
             type: object
-            required:
-              - username
             properties:
               username:
                 type: string
               bio:
                 type: string
-                nullable: true
+                example: "Nova bio!"
               url:
                 type: string
-                nullable: true
               base64:
                 type: string
-                nullable: true
+            required: [username]
     responses:
       200:
-        description: Profile successfully updated.
+        description: Perfil atualizado com sucesso
     """
-    data = request.get_json()
-    ig = get_client(data["username"])
-    # Update biography if provided
-    if bio := data.get("bio"):
-        ig.account_edit(biography=bio)
-    # Update profile picture if a media payload is provided
-    if data.get("base64") or data.get("url"):
-        buffer = get_buffer_from_source(data)
-        ig.account_change_picture(buffer)
-    return jsonify({"message": "Perfil atualizado"})
+    body = UpdateBioBody.model_validate(request.get_json(force=True))
+    try:
+        client = await resume_session(body.username)
+        if body.bio:
+            await client.edit_bio(body.bio)
+        if body.base64 or body.url:
+            data: bytes
+            if body.base64:
+                data = base64.b64decode(body.base64.split(",", 1)[1] if "," in body.base64 else body.base64)
+            else:
+                resp = requests.get(body.url)
+                resp.raise_for_status()
+                data = resp.content
+            await client.change_profile_picture(data)
+        return jsonify({"message": "Bio e/ou foto de perfil atualizadas com sucesso"})
+    except Exception as exc:
+        raise BadRequestError(f"Erro ao atualizar bio/foto: {exc}")
+
+
+@bp.get("/<targetUsername>")
+@admin_auth_required
+async def get_profile_by_username(targetUsername: str):
+    """Buscar dados públicos de um perfil do Instagram
+    ---
+    tags: [Profile]
+    parameters:
+      - name: targetUsername
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+            required: [username]
+    responses:
+      200:
+        description: Dados do perfil retornados com sucesso
+    """
+    body = GetProfileBody.model_validate({"username": request.args.get("username")})
+    try:
+        client = await resume_session(body.username)
+        profile = await client.user_info(targetUsername)
+        return jsonify(profile)
+    except Exception as exc:
+        raise BadRequestError(str(exc))

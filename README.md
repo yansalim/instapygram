@@ -1,71 +1,88 @@
-# Pipegram Flask API
+<p align="center">
+  <img src="https://i.imgur.com/zbmYf2q.png" width="200" alt="Pipegram Logo" />
+</p>
 
-An unofficial Instagram API implemented in Python using Flask and [instagrapi](https://github.com/subzeroid/instagrapi). This project re‑implements the functionality of the original Node.js Pipegram API in a modular and extensible manner. **Use at your own risk:** it interacts with Instagram via reverse‑engineered endpoints and may break or cause account restrictions.
+# Pipegram (Flask) 🚀
 
-## Features
+API REST não oficial do Instagram reescrita em Python com Flask.
 
-* **Authentication**: login with username/password, resume saved sessions, import JSON sessions and delete sessions.
-* **Posts**: publish photos or videos to feed, stories or reels by providing a base64 payload or remote URL.
-* **Direct Messages**: send text messages, list inbox threads and retrieve messages from a thread.
-* **Profile**: fetch public profile information and update the biography or profile picture of the logged in user.
-* **Stories**: list current public stories of a given username.
-* **Swagger UI**: automatically generated API documentation served at `/api-docs`.
+Observação importante: esta API não usa a API oficial do Instagram. Utilize por sua conta e risco e respeite os termos de uso da plataforma.
 
-## Installation
+## Principais mudanças
 
-1. Clone the repository and change into the directory:
+- Backend migrado de Node.js/Express para Python/Flask.
+- Documentação via Swagger usando Flasgger disponível em `/apidocs`.
+- Docker pronto para uso. Compose expõe a porta 3000.
+- Sessões em JSON no diretório `sessions/` (montado via volume).
 
-   ```bash
-   git clone https://github.com/your_user/pipegram_flask.git
-   cd pipegram_flask
-   ```
+## Como rodar com Docker
 
-2. Copy the example environment file and adjust values:
-
-   ```bash
-   cp example.env .env
-   # edit .env to set ADMIN_TOKEN and other secrets
-   ```
-
-3. Create a virtual environment and install dependencies:
-
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-4. Run the application locally:
-
-   ```bash
-   python run.py
-   ```
-
-   The API will be available on `http://localhost:5000` and Swagger docs at `http://localhost:5000/api-docs`.
-
-Alternatively, use Docker:
-
-```bash
-docker build -t pipegram-flask .
-docker run --env-file .env -p 5000:5000 pipegram-flask
-```
-
-## Using docker-compose
-
-The repository includes a `docker-compose.yml` that will build and run the service. It mounts the `sessions/` directory as a volume so session files persist across restarts.
-
-```bash
-docker-compose up --build
-```
-
-## Making authenticated requests
-
-Most endpoints (except for `/auth/*`) require a valid **admin token**. Set `ADMIN_TOKEN` in your `.env` and include it in the `Authorization` header of requests as follows:
+1. Crie um arquivo `.env` na raiz com:
 
 ```
-Authorization: Bearer <your-admin-token>
+ADMIN_TOKEN=seu_token_admin
+PORT=3000
 ```
 
-## Disclaimer
+2. Build e subida com docker-compose:
 
-This project uses an unofficial Instagram API obtained via reverse engineering. Use is subject to Instagram’s terms and conditions. Accounts can be restricted or banned for automated actions. Use responsibly and respect Instagram’s policies.
+```
+docker compose up --build -d
+```
+
+3. Acesse:
+
+- API: `http://localhost:3000/`
+- Swagger UI: `http://localhost:3000/apidocs`
+
+Para ver logs:
+
+```
+docker compose logs -f api-instagram
+```
+
+O volume `./sessions` é montado em `/app/sessions` dentro do container.
+
+## Endpoints (compatíveis com a versão Node)
+
+- Auth
+  - POST `/auth/login`
+  - POST `/auth/resume`
+  - POST `/auth/status`
+  - POST `/auth/delete`
+  - POST `/auth/import-session`
+
+- Post (requer header Authorization: Bearer <ADMIN_TOKEN>)
+  - POST `/post/photo-feed`
+  - POST `/post/photo-story`
+
+- DM (requer header Authorization: Bearer <ADMIN_TOKEN>)
+  - POST `/dm/send`
+  - POST `/dm/inbox`
+  - POST `/dm/thread/{threadId}`
+
+- Profile (requer header Authorization: Bearer <ADMIN_TOKEN>)
+  - POST `/profile/update-bio`
+  - POST `/profile/{targetUsername}`
+
+- Stories (requer header Authorization: Bearer <ADMIN_TOKEN>)
+  - POST `/stories`
+
+## Notas sobre implementação Instagram
+
+Esta migração inclui um adaptador `app/services/session_adapter.py` como placeholder. Você pode conectar uma biblioteca Python que forneça acesso ao Instagram privado e implementar os métodos do adaptador. Por padrão, as respostas são simuladas para manter a interface e os contratos da API enquanto você conecta a integração real.
+
+## Desenvolvimento local (opcional)
+
+Se desejar executar fora do Docker:
+
+```
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+set FLASK_APP=app
+set ADMIN_TOKEN=seu_token_admin
+flask run --host=0.0.0.0 --port=3000
+```
+
+Para produção no container, usamos gunicorn conforme `Dockerfile`.

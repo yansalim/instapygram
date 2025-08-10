@@ -1,0 +1,14 @@
+{
+  "name": "api_instagram",
+  "version": "1.1.0",
+  "main": "index.js",
+  "scripts": {
+    "dev:py": "docker compose up --build",
+    "down": "docker compose down"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {}
+}

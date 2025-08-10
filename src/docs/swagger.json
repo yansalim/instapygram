@@ -1,0 +1,641 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Pipegram v1.0.2",
+    "version": "1.0.1",
+    "description": "API local para interagir com Instagram com sessões em JSON",
+    "x-logo": {
+      "url": "https://via.placeholder.com/150x50.png",
+      "altText": "Logo da API Instagram Local"
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Autenticação e sessões"
+    },
+    {
+      "name": "Post",
+      "description": "Publicações (feed, stories)"
+    },
+    {
+      "name": "Profile",
+      "description": "Perfil do usuário"
+    },
+    {
+      "name": "DM",
+      "description": "Mensagens diretas"
+    },
+    {
+      "name": "Stories",
+      "description": "Gerenciamento de stories"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login com Instagram",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "proxy": {
+                    "type": "string"
+                  }
+                },
+                "required": ["username", "password"],
+                "example": {
+                  "username": "usuario_ig",
+                  "password": "senha_secreta",
+                  "proxy": "http://proxy.exemplo.com:8080"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login realizado com sucesso"
+          }
+        }
+      }
+    },
+    "/auth/resume": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Retomar sessão existente",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  }
+                },
+                "required": ["username"],
+                "example": {
+                  "username": "usuario_ig"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sessão retomada"
+          }
+        }
+      }
+    },
+    "/auth/status": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Verificar status de sessão",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  }
+                },
+                "required": ["username"],
+                "example": {
+                  "username": "usuario_ig"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status retornado"
+          }
+        }
+      }
+    },
+    "/auth/delete": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Excluir sessão salva",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  }
+                },
+                "required": ["username"],
+                "example": {
+                  "username": "usuario_ig"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sessão removida"
+          }
+        }
+      }
+    },
+    "/auth/import-session": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Importar uma sessão existente",
+        "description": "Permite importar uma sessão em formato JSON e iniciar a sessão sem precisar fazer login de novo.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string", "example": "meu_usuario" },
+                  "session": {
+                    "type": "object",
+                    "description": "JSON completo da sessão exportada"
+                  }
+                },
+                "required": ["username", "session"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sessão importada com sucesso",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sessão importada com sucesso.",
+                  "logged_in_user": {
+                    "username": "meu_usuario",
+                    "full_name": "Meu Nome",
+                    "profile_pic_url": "https://..."
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Erro de requisição" },
+          "500": { "description": "Erro ao importar sessão" }
+        }
+      }
+    },
+    "/post/photo-feed": {
+      "post": {
+        "summary": "Publicar foto no feed",
+        "tags": ["Post"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "caption": { "type": "string" },
+                  "base64": { "type": "string" },
+                  "url": { "type": "string" }
+                },
+                "required": ["username"]
+              },
+              "example": {
+                "username": "minha_conta",
+                "caption": "Minha foto no feed!",
+                "url": "https://meusite.com/foto.jpg"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Foto publicada com sucesso"
+          }
+        }
+      }
+    },
+    "/post/photo-story": {
+      "post": {
+        "summary": "Publicar foto nos Stories",
+        "tags": ["Post"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "base64": { "type": "string" },
+                  "url": { "type": "string" }
+                },
+                "required": ["username"]
+              },
+              "example": {
+                "username": "minha_conta",
+                "base64": "<sua imagem em base64 aqui>"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Story com foto publicado"
+          }
+        }
+      }
+    },
+    "/dm/send": {
+      "post": {
+        "tags": ["DM"],
+        "summary": "Enviar DM",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "toUsername": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": ["username", "toUsername", "message"],
+                "example": {
+                  "username": "minha_conta",
+                  "toUsername": "destinatario",
+                  "message": "Olá! Tudo bem?"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "DM enviada"
+          }
+        }
+      }
+    },
+    "/dm/inbox": {
+      "post": {
+        "tags": ["DM"],
+        "summary": "Obter inbox de mensagens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  }
+                },
+                "required": ["username"],
+                "example": {
+                  "username": "minha_conta"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inbox retornada"
+          }
+        }
+      }
+    },
+    "/dm/thread/{threadId}": {
+      "post": {
+        "tags": ["DM"],
+        "summary": "Obter mensagens da conversa",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "12345678901234567"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  }
+                },
+                "required": ["username"],
+                "example": {
+                  "username": "minha_conta"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mensagens retornadas"
+          }
+        }
+      }
+    },
+    "/stories": {
+      "post": {
+        "tags": ["Stories"],
+        "summary": "Listar stories de um usuário",
+        "description": "Retorna os stories públicos recentes de um usuário a partir do username da sessão logada e do username alvo.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "minha_sessao"
+                  },
+                  "targetUsername": {
+                    "type": "string",
+                    "example": "neymarjr"
+                  }
+                },
+                "required": ["username", "targetUsername"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stories obtidos com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "string",
+                        "example": "omateusgomes7"
+                      },
+                      "media_type": {
+                        "type": "string",
+                        "example": "photo"
+                      },
+                      "taken_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-06-01T12:34:56.000Z"
+                      },
+                      "media_url": {
+                        "type": "string",
+                        "example": "https://scontent.cdninstagram.com/story123.jpg"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição mal formatada"
+          },
+          "500": {
+            "description": "Erro interno do servidor"
+          }
+        }
+      }
+    },
+    "/profile/{targetUsername}": {
+      "post": {
+        "tags": ["Profile"],
+        "summary": "Buscar dados públicos de um perfil do Instagram",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "targetUsername",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Username do perfil que deseja buscar"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Username da sessão logada"
+                  }
+                },
+                "required": ["username"],
+                "example": {
+                  "username": "meu_usuario_logado"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dados do perfil retornados com sucesso"
+          },
+          "400": {
+            "description": "Parâmetros obrigatórios ausentes"
+          },
+          "500": {
+            "description": "Erro interno ao buscar perfil"
+          }
+        }
+      }
+    },
+    "/profile/stories/{targetUsername}": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Buscar stories de um usuário",
+        "description": "Retorna os stories públicos do usuário informado. É necessário que a conta logada (username) tenha permissão para visualizar os stories.",
+        "parameters": [
+          {
+            "name": "targetUsername",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Username do perfil que você quer buscar os stories"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "minha_conta_ativa"
+                  }
+                },
+                "required": ["username"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lista de stories retornada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "example": "3132895121894228375_12345678"
+                      },
+                      "type": { "type": "string", "example": "image" },
+                      "url": {
+                        "type": "string",
+                        "example": "https://instagram.com/story.jpg"
+                      },
+                      "taken_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-05-23T16:47:32.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros ausentes"
+          },
+          "500": {
+            "description": "Erro ao buscar stories"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/profile/update-bio": {
+      "post": {
+        "tags": ["Profile"],
+        "summary": "Atualizar bio e foto de perfil",
+        "description": "Atualiza a biografia e/ou foto de perfil do usuário autenticado.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Username da sessão ativa"
+                  },
+                  "bio": {
+                    "type": "string",
+                    "description": "Texto da nova bio"
+                  },
+                  "photoUrl": {
+                    "type": "string",
+                    "description": "URL da nova foto de perfil (opcional)"
+                  },
+                  "base64Photo": {
+                    "type": "string",
+                    "description": "Foto de perfil em base64 (opcional)"
+                  }
+                },
+                "required": ["username"],
+                "example": {
+                  "username": "usuario_ig",
+                  "bio": "Nova bio atualizada!",
+                  "photoUrl": "https://link.com/foto.jpg"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil atualizado com sucesso"
+          },
+          "400": {
+            "description": "Erro de validação nos parâmetros enviados"
+          },
+          "500": {
+            "description": "Erro interno ao tentar atualizar o perfil"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

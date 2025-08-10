@@ -1,55 +1,48 @@
-"""
-Story endpoints.
-
-This blueprint exposes a single endpoint for retrieving the current
-public stories of a given user. A valid admin token is required.
-"""
 from flask import Blueprint, request, jsonify
-from werkzeug.exceptions import BadRequest
+from pydantic import BaseModel
+from ..errors import BadRequestError
+from ..middleware import admin_auth_required
+from ..services.instagram_client import resume_session
 
-from utils.validators import expect_json
-from utils.admin import admin_required
-from services.instagram_client import get_client
-
-
-stories_bp = Blueprint("stories", __name__)
+bp = Blueprint("stories", __name__)
 
 
-@stories_bp.route("/", methods=["POST"])
-@admin_required
-@expect_json(["username", "targetUsername"])
-def get_user_stories():
-    """Retrieve the current stories of a public user.
+class StoriesBody(BaseModel):
+    username: str
+    targetUsername: str
 
+
+@bp.get("/")
+@admin_auth_required
+async def get_user_stories():
+    """Listar stories de um usuário
     ---
-    tags:
-      - Stories
-    security:
-      - bearerAuth: []
+    tags: [Stories]
     requestBody:
       required: true
       content:
         application/json:
           schema:
             type: object
-            required:
-              - username
-              - targetUsername
             properties:
               username:
                 type: string
+                example: "minha_sessao"
               targetUsername:
                 type: string
+                example: "neymarjr"
+            required: [username, targetUsername]
     responses:
       200:
-        description: List of stories.
+        description: Stories obtidos com sucesso
     """
-    data = request.get_json()
-    ig = get_client(data["username"])
+    body = StoriesBody.model_validate({
+        "username": request.args.get("username"),
+        "targetUsername": request.args.get("targetUsername"),
+    })
     try:
-        # Convert the target username into a numeric ID
-        user_id = ig.user_id_from_username(data["targetUsername"])
-        stories = [item.dict() for item in ig.user_stories(user_id)]
-        return jsonify(stories)
+        client = await resume_session(body.username)
+        items = await client.user_stories(body.targetUsername)
+        return jsonify(items)
     except Exception as exc:
-        raise BadRequest(str(exc))
+        raise BadRequestError(str(exc))

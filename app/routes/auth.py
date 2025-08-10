@@ -1,33 +1,35 @@
-"""
-Authentication endpoints.
-
-This blueprint exposes endpoints for managing user sessions with
-Instagram: logging in with username/password, resuming saved
-sessions, checking session status, deleting sessions and importing
-pre‑existing session JSON. Each view includes OpenAPI documentation
-consumable by Flasgger to generate Swagger UI documentation.
-"""
 from flask import Blueprint, request, jsonify
-from werkzeug.exceptions import BadRequest, Unauthorized
+from pydantic import BaseModel
+from typing import Optional, Any, Dict
+from ..errors import BadRequestError, ResourceNotFoundError
+from ..services.instagram_client import login_with_password, resume_session
+from ..utils import session_manager
 
-from services.instagram_client import login_with_password, resume_session
-from services.session_manager import (
-    session_exists,
-    delete_session,
-    import_session_json,
-)
-from utils.validators import expect_json
+bp = Blueprint("auth", __name__)
 
 
-# Blueprint instance for authentication routes
-auth_bp = Blueprint("auth", __name__)
+class LoginBody(BaseModel):
+    username: str
+    password: str
+    proxy: Optional[str] = None
 
 
-@auth_bp.route("/login", methods=["POST"])
-@expect_json(["username", "password"])
-def login():
-    """Login with username and password.
+class ResumeBody(BaseModel):
+    username: str
 
+
+class StatusBody(BaseModel):
+    username: str
+
+
+class ImportBody(BaseModel):
+    username: str
+    session: Dict[str, Any]
+
+
+@bp.post("/login")
+async def login():
+    """Login com Instagram
     ---
     tags:
       - Auth
@@ -37,154 +39,146 @@ def login():
         application/json:
           schema:
             type: object
-            required:
-              - username
-              - password
             properties:
               username:
                 type: string
-                example: conta_insta
               password:
                 type: string
-                example: minhasenha
               proxy:
                 type: string
-                nullable: true
-                example: http://user:pass@host:port
+            required: [username, password]
     responses:
       200:
-        description: Session created and serialized.
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                session:
-                  type: object
-      401:
-        description: Authentication failure.
+        description: Login realizado com sucesso
     """
-    data = request.get_json()
+    body = LoginBody.model_validate(request.get_json(force=True))
     try:
-        session = login_with_password(
-            data["username"],
-            data["password"],
-            data.get("proxy"),
-        )
-        return jsonify({"message": "Login realizado", "session": session})
+        _, session = await login_with_password(body.username, body.password, body.proxy)
+        return jsonify({"message": "Login realizado com sucesso", "session": session})
     except Exception as exc:
-        # Convert any error to 401 to hide internal details
-        raise Unauthorized(str(exc))
+        error_msg = str(exc)
+        if "checkpoint_challenge_required" in error_msg:
+            return jsonify({"error": "Verificação adicional necessária (2FA/Captcha)"}), 400
+        elif "bad_password" in error_msg:
+            return jsonify({"error": "Senha incorreta"}), 400
+        elif "invalid_user" in error_msg:
+            return jsonify({"error": "Usuário não encontrado"}), 400
+        else:
+            return jsonify({"error": f"Falha ao autenticar: {error_msg}"}), 400
 
 
-@auth_bp.route("/resume", methods=["POST"])
-@expect_json(["username"])
-def resume():
-    """Resume an existing session from saved file.
-
+@bp.post("/resume")
+async def resume():
+    """Retomar sessão existente
     ---
-    tags:
-      - Auth
+    tags: [Auth]
     requestBody:
       required: true
       content:
         application/json:
           schema:
             type: object
-            required:
-              - username
             properties:
               username:
                 type: string
+            required: [username]
     responses:
       200:
-        description: Session successfully resumed.
+        description: Sessão retomada
     """
-    resume_session(request.get_json()["username"])
-    return jsonify({"message": "Sessão retomada"})
+    body = ResumeBody.model_validate(request.get_json(force=True))
+    try:
+        await resume_session(body.username)
+        return jsonify({"message": "Sessão retomada com sucesso"})
+    except Exception:
+        raise ResourceNotFoundError("Sessão não encontrada ou inválida")
 
 
-@auth_bp.route("/status")
+@bp.get("/status")
 def status():
-    """Check whether a session exists.
-
+    """Verificar status de sessão
     ---
-    tags:
-      - Auth
-    parameters:
-      - in: query
-        name: username
-        schema:
-          type: string
-        required: true
+    tags: [Auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+            required: [username]
     responses:
       200:
-        description: Session status information.
+        description: Status retornado
     """
     username = request.args.get("username")
     if not username:
-        raise BadRequest("username é obrigatório")
-    return jsonify({"username": username, "active": session_exists(username)})
+        raise BadRequestError("username é obrigatório")
+    exists = session_manager.session_exists(username)
+    return jsonify({"username": username, "status": "ativa" if exists else "inexistente"})
 
 
-@auth_bp.route("/delete", methods=["DELETE"])
-@expect_json(["username"])
+@bp.delete("/delete")
 def logout():
-    """Delete a saved session.
-
+    """Excluir sessão salva
     ---
-    tags:
-      - Auth
+    tags: [Auth]
     requestBody:
       required: true
       content:
         application/json:
           schema:
             type: object
-            required:
-              - username
             properties:
               username:
                 type: string
+            required: [username]
     responses:
       200:
-        description: Session successfully deleted.
-      400:
-        description: Session not found.
+        description: Sessão removida
     """
-    if delete_session(request.get_json()["username"]):
-        return jsonify({"message": "Sessão removida"})
-    raise BadRequest("Sessão não encontrada")
+    username = request.args.get("username")
+    if not username:
+        raise BadRequestError("username é obrigatório")
+    success = session_manager.delete_session(username)
+    if success:
+        return jsonify({"message": "Sessão removida com sucesso"})
+    raise ResourceNotFoundError("Sessão não encontrada")
 
 
-@auth_bp.route("/login-session", methods=["POST"])
-@expect_json(["username", "session"])
-def login_session():
-    """Import an already‑generated session JSON.
-
+@bp.post("/import-session")
+async def import_session():
+    """Importar sessão existente
     ---
-    tags:
-      - Auth
+    tags: [Auth]
     requestBody:
       required: true
       content:
         application/json:
           schema:
             type: object
-            required:
-              - username
-              - session
             properties:
               username:
                 type: string
+                example: "meu_usuario"
               session:
                 type: object
+                description: JSON completo da sessão exportada
+            required: [username, session]
     responses:
       200:
-        description: Session imported successfully.
+        description: Sessão importada
     """
-    body = request.get_json()
-    import_session_json(body["username"], body["session"])
-    return jsonify({"message": "Sessão importada"})
+    body = ImportBody.model_validate(request.get_json(force=True))
+    try:
+        session_manager.save_session(body.username, body.session)
+        client = await resume_session(body.username)
+        user = await client.current_user()
+        return jsonify({
+            "message": "Sessão importada com sucesso.",
+            "logged_in_user": user,
+        })
+    except Exception as exc:
+        raise BadRequestError(f"Erro ao importar sessão: {exc}")
