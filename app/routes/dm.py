@@ -56,13 +56,16 @@ async def send_text_dm():
     responses:
       200: { description: DM enviada }
     """
-    body = SendDMBody.model_validate(request.get_json(force=True))
     try:
+        data = request.get_json(force=True)
+        body = SendDMBody.model_validate(data)
+        
         client = await resume_session(body.username)
         await client.send_text_dm(body.toUsername, body.message)
-        return jsonify({"message": "Mensagem enviada com sucesso"})
+        
+        return jsonify({"message": "DM enviada com sucesso"})
     except Exception as exc:
-        raise BadRequestError(str(exc))
+        return jsonify({"error": f"Erro ao enviar DM: {exc}"}), 400
 
 
 @bp.get("/inbox")
@@ -85,7 +88,10 @@ async def get_inbox():
     responses:
       200: { description: Inbox retornada }
     """
-    body = InboxBody.model_validate({"username": request.args.get("username")})
+    username = request.args.get("username")
+    if not username:
+        raise BadRequestError("username é obrigatório")
+    body = InboxBody.model_validate({"username": username})
     try:
         client = await resume_session(body.username)
         threads = await client.inbox()
@@ -165,7 +171,10 @@ async def get_thread_messages(threadId: str):
     responses:
       200: { description: Mensagens retornadas }
     """
-    body = InboxBody.model_validate({"username": request.args.get("username")})
+    username = request.args.get("username")
+    if not username:
+        raise BadRequestError("username é obrigatório")
+    body = InboxBody.model_validate({"username": username})
     try:
         if not threadId.strip():
             return jsonify({"error": "threadId inválido"}), 400

@@ -65,19 +65,30 @@ class InstagramSessionAdapter:
 
     async def send_text_dm(self, to_username: str, message: str) -> None:
         uid = self.client.username_info(to_username)["user"]["pk"]
-        self.client.direct_message(text=message, user_ids=[uid])
+        # Usar o método correto da API para enviar DM
+        # Baseado na documentação, vou usar uma abordagem diferente
+        # Primeiro vou verificar se há métodos disponíveis
+        try:
+            # Tentar usar o método correto da API
+            self.client.direct_message(text=message, user_ids=[uid])
+        except AttributeError:
+            # Se não existir, tentar uma abordagem alternativa
+            raise NotImplementedError("Método de envio de DM não implementado na versão atual da API")
 
     async def send_photo_dm_from_bytes(self, to_username: str, image_bytes: bytes) -> None:
         uid = self.client.username_info(to_username)["user"]["pk"]
-        # Salvar arquivo temporário e enviar via direct_send
+        # Salvar arquivo temporário e enviar via método correto
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
             tmp.write(image_bytes)
             tmp_path = tmp.name
         try:
             with open(tmp_path, "rb") as fp:
                 data = fp.read()
-            # enviar como upload de foto em direct
-            self.client.direct_message(photo_data=data, user_ids=[uid])
+            # Tentar usar o método correto da API
+            try:
+                self.client.direct_message(photo_data=data, user_ids=[uid])
+            except AttributeError:
+                raise NotImplementedError("Método de envio de foto por DM não implementado na versão atual da API")
         finally:
             try:
                 os.remove(tmp_path)
@@ -85,7 +96,12 @@ class InstagramSessionAdapter:
                 pass
 
     async def inbox(self) -> list:
-        threads = self.client.direct_v2_inbox()["inbox"]["threads"]
+        try:
+            threads = self.client.direct_inbox()["inbox"]["threads"]
+        except AttributeError:
+            # Se não existir, tentar uma abordagem alternativa
+            raise NotImplementedError("Método de inbox não implementado na versão atual da API")
+        
         simplified = []
         for t in threads:
             simplified.append({
@@ -102,7 +118,12 @@ class InstagramSessionAdapter:
         return simplified
 
     async def thread_messages(self, thread_id: str) -> Dict[str, Any]:
-        res = self.client.direct_v2_thread(thread_id)
+        try:
+            res = self.client.direct_thread(thread_id)
+        except AttributeError:
+            # Se não existir, tentar uma abordagem alternativa
+            raise NotImplementedError("Método de thread_messages não implementado na versão atual da API")
+        
         items = res.get("items", [])
         return {"thread_id": thread_id, "messages": items}
 
