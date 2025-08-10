@@ -1,12 +1,11 @@
 from flask import Flask
 from flasgger import Swagger
-from asgiref.wsgi import WsgiToAsgi
-from .errors import register_error_handlers
 
-
-def create_app() -> Flask:
+def create_app():
     app = Flask(__name__)
-    app.config.setdefault("SWAGGER", {
+
+    # Config Swagger (ajuste conforme seu setup)
+    app.config["SWAGGER"] = {
         "title": "Pipegram (Flask) - Instagram API",
         "uiversion": 3,
         "openapi": "3.0.0",
@@ -25,24 +24,29 @@ def create_app() -> Flask:
             }
         },
         "security": [{"bearerAuth": []}],
-    })
+    }
     Swagger(app)
-    from .routes.auth import bp as auth_bp
-    from .routes.post import bp as post_bp
-    from .routes.dm import bp as dm_bp
-    from .routes.profile import bp as profile_bp
-    from .routes.stories import bp as stories_bp
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(post_bp, url_prefix="/post")
-    app.register_blueprint(dm_bp, url_prefix="/dm")
-    app.register_blueprint(profile_bp, url_prefix="/profile")
-    app.register_blueprint(stories_bp, url_prefix="/stories")
-    @app.get("/")
+
+    # Rota raiz para teste
+    @app.route("/")
     def root():
-        return "🚀 API do Instagram não oficial (Flask + instagrapi) está rodando!"
+        return "🚀 API do Instagram não oficial (Flask) está rodando!"
+
+    # Importa e registra blueprints
+    from .routes import auth, post, profile, stories, dm
+
+    app.register_blueprint(auth.bp, url_prefix="/auth")
+    app.register_blueprint(post.bp, url_prefix="/post")
+    app.register_blueprint(profile.bp, url_prefix="/profile")
+    app.register_blueprint(stories.bp, url_prefix="/stories")
+    app.register_blueprint(dm.bp, url_prefix="/dm")
+
+    # Registrar handlers de erro
+    from .errors import register_error_handlers
     register_error_handlers(app)
+
+    # Middlewares globais, handlers etc. (se houver)
     return app
 
-
-# ASGI wrapper para Uvicorn
-app = WsgiToAsgi(create_app())
+# Criar a aplicação Flask
+app = create_app()

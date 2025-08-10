@@ -7,32 +7,27 @@ from ..utils import session_manager
 
 bp = Blueprint("auth", __name__)
 
-
 class LoginBody(BaseModel):
     username: str
     password: str
     proxy: Optional[str] = None
 
-
 class ResumeBody(BaseModel):
     username: str
 
-
 class StatusBody(BaseModel):
     username: str
-
 
 class ImportBody(BaseModel):
     username: str
     session: Dict[str, Any]
 
-
 @bp.post("/login")
 async def login():
-    """Login com Instagram
+    """
+    Login com Instagram
     ---
-    tags:
-      - Auth
+    tags: [Auth]
     requestBody:
       required: true
       content:
@@ -40,16 +35,12 @@ async def login():
           schema:
             type: object
             properties:
-              username:
-                type: string
-              password:
-                type: string
-              proxy:
-                type: string
+              username: { type: string }
+              password: { type: string }
+              proxy: { type: string }
             required: [username, password]
     responses:
-      200:
-        description: Login realizado com sucesso
+      200: { description: Login realizado com sucesso }
     """
     body = LoginBody.model_validate(request.get_json(force=True))
     try:
@@ -66,10 +57,10 @@ async def login():
         else:
             return jsonify({"error": f"Falha ao autenticar: {error_msg}"}), 400
 
-
 @bp.post("/resume")
 async def resume():
-    """Retomar sessão existente
+    """
+    Retomar sessão existente
     ---
     tags: [Auth]
     requestBody:
@@ -79,12 +70,10 @@ async def resume():
           schema:
             type: object
             properties:
-              username:
-                type: string
+              username: { type: string }
             required: [username]
     responses:
-      200:
-        description: Sessão retomada
+      200: { description: Sessão retomada }
     """
     body = ResumeBody.model_validate(request.get_json(force=True))
     try:
@@ -93,25 +82,19 @@ async def resume():
     except Exception:
         raise ResourceNotFoundError("Sessão não encontrada ou inválida")
 
-
 @bp.get("/status")
 def status():
-    """Verificar status de sessão
+    """
+    Verificar status de sessão
     ---
     tags: [Auth]
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username:
-                type: string
-            required: [username]
+    parameters:
+      - in: query
+        name: username
+        required: true
+        schema: { type: string }
     responses:
-      200:
-        description: Status retornado
+      200: { description: Status retornado }
     """
     username = request.args.get("username")
     if not username:
@@ -119,25 +102,19 @@ def status():
     exists = session_manager.session_exists(username)
     return jsonify({"username": username, "status": "ativa" if exists else "inexistente"})
 
-
 @bp.delete("/delete")
 def logout():
-    """Excluir sessão salva
+    """
+    Excluir sessão salva
     ---
     tags: [Auth]
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username:
-                type: string
-            required: [username]
+    parameters:
+      - in: query
+        name: username
+        required: true
+        schema: { type: string }
     responses:
-      200:
-        description: Sessão removida
+      200: { description: Sessão removida }
     """
     username = request.args.get("username")
     if not username:
@@ -147,10 +124,10 @@ def logout():
         return jsonify({"message": "Sessão removida com sucesso"})
     raise ResourceNotFoundError("Sessão não encontrada")
 
-
 @bp.post("/import-session")
 async def import_session():
-    """Importar sessão existente
+    """
+    Importar sessão existente
     ---
     tags: [Auth]
     requestBody:
@@ -160,25 +137,17 @@ async def import_session():
           schema:
             type: object
             properties:
-              username:
-                type: string
-                example: "meu_usuario"
-              session:
-                type: object
-                description: JSON completo da sessão exportada
+              username: { type: string, example: "meu_usuario" }
+              session: { type: object, description: "JSON completo da sessão exportada" }
             required: [username, session]
     responses:
-      200:
-        description: Sessão importada
+      200: { description: Sessão importada }
     """
     body = ImportBody.model_validate(request.get_json(force=True))
     try:
         session_manager.save_session(body.username, body.session)
         client = await resume_session(body.username)
         user = await client.current_user()
-        return jsonify({
-            "message": "Sessão importada com sucesso.",
-            "logged_in_user": user,
-        })
+        return jsonify({"message": "Sessão importada com sucesso.", "logged_in_user": user})
     except Exception as exc:
         raise BadRequestError(f"Erro ao importar sessão: {exc}")

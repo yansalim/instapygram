@@ -1,24 +1,23 @@
 from flask import Blueprint, request, jsonify
-from pydantic import BaseModel
-from ..errors import BadRequestError
 from pydantic import BaseModel, field_validator
 from typing import Optional
 import base64
 import requests
+
+from ..errors import BadRequestError
 from ..middleware import admin_auth_required
 from ..services.instagram_client import resume_session
 
 bp = Blueprint("dm", __name__)
-
 
 class SendDMBody(BaseModel):
     username: str
     toUsername: str
     message: str
 
-
 class InboxBody(BaseModel):
     username: str
+
 class SendPhotoDMBody(BaseModel):
     username: str
     toUsername: str
@@ -32,12 +31,11 @@ class SendPhotoDMBody(BaseModel):
             raise ValueError("Você deve informar ao menos base64 ou url")
         return v
 
-
-
 @bp.post("/send")
 @admin_auth_required
-async def send_text_dm():
-    """Enviar DM de texto
+def send_text_dm():
+    """
+    Enviar DM de texto
     ---
     tags: [DM]
     security:
@@ -56,34 +54,29 @@ async def send_text_dm():
     responses:
       200: { description: DM enviada }
     """
+    import asyncio
+    body = SendDMBody.model_validate(request.get_json(force=True))
     try:
-        # Teste simples primeiro
-        try:
-            data = request.get_json(force=True)
-            return jsonify({"message": "Request válido", "data": data})
-        except Exception as json_error:
-            return jsonify({"error": f"Erro ao parsear JSON: {json_error}"}), 400
+        client = asyncio.run(resume_session(body.username))
+        asyncio.run(client.send_text_dm(body.toUsername, body.message))
+        return jsonify({"message": "DM enviada"})
     except Exception as exc:
-        return jsonify({"error": f"Erro: {exc}"}), 400
-
+        raise BadRequestError(f"Erro ao enviar DM: {exc}")
 
 @bp.get("/inbox")
 @admin_auth_required
 async def get_inbox():
-    """Obter inbox de mensagens
+    """
+    Obter inbox de mensagens
     ---
     tags: [DM]
     security:
       - bearerAuth: []
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username: { type: string, example: "minha_conta" }
-            required: [username]
+    parameters:
+      - in: query
+        name: username
+        required: true
+        schema: { type: string }
     responses:
       200: { description: Inbox retornada }
     """
@@ -98,13 +91,15 @@ async def get_inbox():
     except Exception as exc:
         raise BadRequestError(str(exc))
 
-
 @bp.post("/send-photo")
 @admin_auth_required
 async def send_photo_dm():
-    """Enviar imagem por DM (base64 ou URL)
+    """
+    Enviar imagem por DM (base64 ou URL)
     ---
     tags: [DM]
+    security:
+      - bearerAuth: []
     requestBody:
       required: true
       content:
@@ -112,22 +107,13 @@ async def send_photo_dm():
           schema:
             type: object
             properties:
-              username:
-                type: string
-                example: "minha_conta"
-              toUsername:
-                type: string
-                example: "destinatario"
-              base64:
-                type: string
-                example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
-              url:
-                type: string
-                example: "https://exemplo.com/imagem.jpg"
+              username: { type: string, example: "minha_conta" }
+              toUsername: { type: string, example: "destinatario" }
+              base64: { type: string, example: "data:image/jpeg;base64,/9j/4AA..." }
+              url: { type: string, example: "https://exemplo.com/imagem.jpg" }
             required: [username, toUsername]
     responses:
-      200:
-        description: Imagem enviada por DM
+      200: { description: Imagem enviada por DM }
     """
     body = SendPhotoDMBody.model_validate(request.get_json(force=True))
     try:
@@ -137,17 +123,18 @@ async def send_photo_dm():
             resp.raise_for_status()
             await client.send_photo_dm_from_bytes(body.toUsername, resp.content)
         else:
-            data = base64.b64decode(body.base64.split(",", 1)[1] if "," in body.base64 else body.base64)
+            data_str = body.base64.split(",", 1)[1] if "," in body.base64 else body.base64
+            data = base64.b64decode(data_str)
             await client.send_photo_dm_from_bytes(body.toUsername, data)
         return jsonify({"message": "Imagem enviada com sucesso"})
     except Exception as exc:
         raise BadRequestError(f"Erro ao enviar imagem por DM: {exc}")
 
-
 @bp.get("/thread/<threadId>")
 @admin_auth_required
 async def get_thread_messages(threadId: str):
-    """Obter mensagens da conversa
+    """
+    Obter mensagens da conversa
     ---
     tags: [DM]
     security:
@@ -158,26 +145,18 @@ async def get_thread_messages(threadId: str):
         required: true
         schema: { type: string }
         example: "12345678901234567"
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username: { type: string, example: "minha_conta" }
-            required: [username]
+      - in: query
+        name: username
+        required: true
+        schema: { type: string }
     responses:
       200: { description: Mensagens retornadas }
     """
     username = request.args.get("username")
     if not username:
         raise BadRequestError("username é obrigatório")
-    body = InboxBody.model_validate({"username": username})
     try:
-        if not threadId.strip():
-            return jsonify({"error": "threadId inválido"}), 400
-        client = await resume_session(body.username)
+        client = await resume_session(username)
         messages = await client.thread_messages(threadId.strip())
         return jsonify(messages)
     except Exception as exc:
