@@ -1,8 +1,8 @@
-# �� Pipegram (Flask) - Unofficial Instagram API
+# Instapygram (Flask) - Unofficial Instagram API
 
-![Pipegram Logo](https://i.imgur.com/kKHUeGh.png)
+![Instapygram Logo](https://ibb.co/PGcTZdQm][img]https://i.ibb.co/s9K5vZHm/Paisagem-Retrofuturista-com-Logo-Neon.png)
 
-**Pipegram** is an **unofficial** Instagram API developed to automate common actions on Instagram accounts, with support for **multiple simultaneous sessions**. Now rewritten in Python/Flask using the [instagrapi](https://subzeroid.github.io/instagrapi/) library.
+**Instapygram** is an **unofficial** Instagram API developed to automate common actions on Instagram accounts, with support for **multiple simultaneous sessions**. Now rewritten in Python/Flask using the [instagrapi](https://subzeroid.github.io/instagrapi/) library.
 
 Interactive documentation is available at `/apidocs` when the service is running.
 
@@ -62,7 +62,7 @@ Interactive documentation is available at `/apidocs` when the service is running
 1. **Clone the repository:**
 ```bash
 git clone <repository-url>
-cd Pipegram
+cd instapygram
 ```
 
 2. **Configure environment variables:**
