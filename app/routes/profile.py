@@ -1,6 +1,6 @@
 
 from flask import Blueprint, request, jsonify
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional
 import base64
 import requests
@@ -16,6 +16,12 @@ class UpdateBioBody(BaseModel):
     url: Optional[str] = None
     base64: Optional[str] = None
 
+    @model_validator(mode='after')
+    def validate_at_least_one_field(self):
+        if not any([self.bio, self.url, self.base64]):
+            raise ValueError("At least one field (bio, url, or base64) must be provided")
+        return self
+
 class GetProfileBody(BaseModel):
     username: str
 
@@ -26,20 +32,61 @@ async def update_bio():
     Update bio and profile picture
     ---
     tags: [Profile]
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username: { type: string }
-              bio: { type: string, example: "New bio!" }
-              url: { type: string }
-              base64: { type: string }
-            required: [username]
+    summary: Update Instagram bio and profile picture
+    description: Updates the bio text and/or profile picture using base64 or URL. At least one field (bio, base64, or url) must be provided along with username.
+    security:
+      - bearerAuth: []
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: Profile update data (bio and/or picture). At least one field (bio, base64, or url) must be provided.
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Username of the account to update (required)
+              example: "my_account"
+            bio:
+              type: string
+              description: New bio text (optional)
+              example: "New bio!"
+            base64:
+              type: string
+              description: Profile picture in base64 format (optional)
+              example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
+            url:
+              type: string
+              description: Profile picture URL for download (optional)
+              example: "https://example.com/profile.jpg"
+          required: 
+            - username
     responses:
-      200: { description: Profile updated successfully }
+      200:
+        description: Profile updated successfully
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Bio and/or profile picture updated successfully"
+      400:
+        description: Error updating profile
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Error updating bio/picture: Session not found"
+      401:
+        description: Missing or invalid authentication token
+      403:
+        description: Invalid token
     """
     body = UpdateBioBody.model_validate(request.get_json(force=True))
     try:
