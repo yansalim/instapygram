@@ -8,7 +8,8 @@ def create_app():
     app.config["SWAGGER"] = {
         "title": "Pipegram (Flask) - Instagram API",
         "uiversion": 3,
-        "openapi": "3.0.0",
+        "swagger": "2.0",
+        "version": "1.0.0",
         "description": "API não oficial do Instagram usando instagrapi. Suporte completo a DMs, postagens, stories e mais.",
         "contact": {
             "name": "Pipegram Support",
@@ -18,12 +19,44 @@ def create_app():
             "name": "MIT",
             "url": "https://opensource.org/licenses/MIT"
         },
-        "components": {
-            "securitySchemes": {
-                "bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+        "host": "localhost:3000",
+        "basePath": "/",
+        "schemes": ["http"],
+        "securityDefinitions": {
+            "bearerAuth": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "Token de autenticação para acessar as rotas protegidas. Use: Bearer token"
             }
         },
-        "security": [{"bearerAuth": []}],
+        "security": [
+            {
+                "bearerAuth": []
+            }
+        ],
+        "tags": [
+            {
+                "name": "Auth",
+                "description": "Operações de autenticação"
+            },
+            {
+                "name": "DM",
+                "description": "Operações de mensagens diretas"
+            },
+            {
+                "name": "Post",
+                "description": "Operações de postagens"
+            },
+            {
+                "name": "Profile",
+                "description": "Operações de perfil"
+            },
+            {
+                "name": "Stories",
+                "description": "Operações de stories"
+            }
+        ]
     }
     Swagger(app)
 

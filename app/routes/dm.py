@@ -38,21 +38,59 @@ def send_text_dm():
     Enviar DM de texto
     ---
     tags: [DM]
+    summary: Enviar mensagem de texto por DM
+    description: Envia uma mensagem de texto para um usuário específico
     security:
       - bearerAuth: []
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username: { type: string, example: "minha_conta" }
-              toUsername: { type: string, example: "destinatario" }
-              message: { type: string, example: "Olá!" }
-            required: [username, toUsername, message]
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: Dados da mensagem
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Nome de usuário da conta que enviará a mensagem
+              example: "minha_conta"
+            toUsername:
+              type: string
+              description: Nome de usuário do destinatário
+              example: "destinatario"
+            message:
+              type: string
+              description: Mensagem a ser enviada
+              example: "Olá! Como você está?"
+          required: 
+            - username
+            - toUsername
+            - message
     responses:
-      200: { description: DM enviada }
+      200:
+        description: DM enviada com sucesso
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "DM enviada"
+      400:
+        description: Erro ao enviar DM
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Erro ao enviar DM: Sessão não encontrada"
+      401:
+        description: Token de autenticação ausente ou inválido
+      403:
+        description: Token inválido
     """
     import asyncio
     body = SendDMBody.model_validate(request.get_json(force=True))
@@ -70,15 +108,65 @@ async def get_inbox():
     Obter inbox de mensagens
     ---
     tags: [DM]
+    summary: Listar conversas do inbox
+    description: Retorna todas as conversas de mensagens diretas
     security:
       - bearerAuth: []
+    produces:
+      - application/json
     parameters:
       - in: query
         name: username
         required: true
-        schema: { type: string }
+        type: string
+        description: Nome de usuário da conta
+        example: "minha_conta"
     responses:
-      200: { description: Inbox retornada }
+      200:
+        description: Lista de conversas retornada
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              thread_id:
+                type: string
+                example: "12345678901234567"
+              thread_title:
+                type: string
+                example: "Conversa com @usuario"
+              users:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                      example: "usuario"
+                    full_name:
+                      type: string
+                      example: "Nome Completo"
+                    profile_pic_url:
+                      type: string
+                      example: "https://example.com/photo.jpg"
+              last_message:
+                type: string
+                example: "Última mensagem da conversa"
+              last_message_timestamp:
+                type: string
+                example: "2025-08-10T18:00:00Z"
+      400:
+        description: Erro na requisição
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "username é obrigatório"
+      401:
+        description: Token de autenticação ausente ou inválido
+      403:
+        description: Token inválido
     """
     username = request.args.get("username")
     if not username:
@@ -98,6 +186,8 @@ async def send_photo_dm():
     Enviar imagem por DM (base64 ou URL)
     ---
     tags: [DM]
+    summary: Enviar foto por mensagem direta
+    description: Envia uma imagem por DM usando base64 ou URL
     security:
       - bearerAuth: []
     requestBody:
@@ -107,13 +197,50 @@ async def send_photo_dm():
           schema:
             type: object
             properties:
-              username: { type: string, example: "minha_conta" }
-              toUsername: { type: string, example: "destinatario" }
-              base64: { type: string, example: "data:image/jpeg;base64,/9j/4AA..." }
-              url: { type: string, example: "https://exemplo.com/imagem.jpg" }
-            required: [username, toUsername]
+              username:
+                type: string
+                description: Nome de usuário da conta que enviará a foto
+                example: "minha_conta"
+              toUsername:
+                type: string
+                description: Nome de usuário do destinatário
+                example: "destinatario"
+              base64:
+                type: string
+                description: Imagem em formato base64 (data:image/jpeg;base64,...)
+                example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
+              url:
+                type: string
+                description: URL da imagem para download
+                example: "https://exemplo.com/imagem.jpg"
+            required: 
+              - username
+              - toUsername
     responses:
-      200: { description: Imagem enviada por DM }
+      200:
+        description: Imagem enviada com sucesso
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Imagem enviada com sucesso"
+      400:
+        description: Erro ao enviar imagem
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: "Erro ao enviar imagem por DM: URL inválida"
+      401:
+        description: Token de autenticação ausente ou inválido
+      403:
+        description: Token inválido
     """
     body = SendPhotoDMBody.model_validate(request.get_json(force=True))
     try:

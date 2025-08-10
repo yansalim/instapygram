@@ -28,19 +28,55 @@ async def login():
     Login com Instagram
     ---
     tags: [Auth]
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username: { type: string }
-              password: { type: string }
-              proxy: { type: string }
-            required: [username, password]
+    summary: Realizar login com credenciais do Instagram
+    description: Autentica um usuário usando username e password do Instagram
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: Credenciais de login
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Nome de usuário do Instagram
+              example: "meu_usuario"
+            password:
+              type: string
+              description: Senha da conta do Instagram
+              example: "minha_senha123"
+            proxy:
+              type: string
+              description: Proxy opcional para conexão
+              example: "http://proxy:8080"
+          required: 
+            - username
+            - password
     responses:
-      200: { description: Login realizado com sucesso }
+      200:
+        description: Login realizado com sucesso
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Login realizado com sucesso"
+            session:
+              type: object
+              description: Dados da sessão salva
+      400:
+        description: Erro na autenticação
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Senha incorreta"
     """
     body = LoginBody.model_validate(request.get_json(force=True))
     try:
