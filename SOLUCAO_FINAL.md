@@ -3,7 +3,7 @@
 ## 🎯 Problema Identificado
 
 O Swagger UI estava enviando requisições com o header de autorização no formato incorreto:
-- **Enviado pelo Swagger**: `Authorization: token`
+- **Enviado pelo Swagger**: `Authorization: token` (sem "Bearer")
 - **Esperado pelo middleware**: `Authorization: Bearer token`
 
 ## 🔧 Solução Implementada
@@ -13,7 +13,7 @@ O Swagger UI estava enviando requisições com o header de autorização no form
 
 O middleware agora aceita **ambos os formatos**:
 - ✅ `Authorization: Bearer token`
-- ✅ `Authorization: token`
+- ✅ `Authorization: Bearer token`
 
 ```python
 # Aceita tanto "Bearer token" quanto apenas "token"
@@ -64,7 +64,7 @@ Para verificar se está funcionando:
 3. Teste uma requisição
 4. No console do navegador (F12), você verá que o Swagger envia:
    ```
-   Authorization: token
+   Authorization: Bearer token
    ```
 5. Mas o middleware aceita e processa corretamente!
 

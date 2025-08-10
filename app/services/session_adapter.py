@@ -41,7 +41,7 @@ class InstagramSessionAdapter:
         return {
             "username": user.username,
             "full_name": user.full_name,
-            "profile_pic_url": user.profile_pic_url,
+            "profile_pic_url": str(user.profile_pic_url) if user.profile_pic_url else '',
         }
 
     async def publish_photo(self, file_bytes: bytes, caption: Optional[str] = None) -> Dict[str, Any]:
@@ -87,24 +87,45 @@ class InstagramSessionAdapter:
         threads = self.client.direct_threads()
         simplified = []
         for thread in threads:
-            users = [{
-                "username": u.username,
-                "full_name": u.full_name,
-                "profile_pic_url": u.profile_pic_url,
-            } for u in thread.users]
-            last_message = None
-            last_message_timestamp = None
-            if thread.messages:
-                last_msg = thread.messages[-1]
-                last_message = last_msg.text
-                last_message_timestamp = last_msg.timestamp
-            simplified.append({
-                "thread_id": thread.id,
-                "thread_title": thread.title,
-                "users": users,
-                "last_message": last_message,
-                "last_message_timestamp": last_message_timestamp,
-            })
+            try:
+                users = [{
+                    "username": getattr(u, 'username', ''),
+                    "full_name": getattr(u, 'full_name', ''),
+                    "profile_pic_url": str(getattr(u, 'profile_pic_url', '')) if getattr(u, 'profile_pic_url', '') else '',
+                } for u in getattr(thread, 'users', [])]
+                
+                last_message = None
+                last_message_timestamp = None
+                if hasattr(thread, 'messages') and thread.messages:
+                    last_msg = thread.messages[-1]
+                    last_message = getattr(last_msg, 'text', '')
+                    last_message_timestamp = getattr(last_msg, 'timestamp', '')
+                
+                # Tenta obter o título do thread de forma segura
+                thread_title = None
+                try:
+                    if hasattr(thread, 'title') and thread.title:
+                        thread_title = thread.title
+                    elif hasattr(thread, 'name') and thread.name:
+                        thread_title = thread.name
+                    else:
+                        # Cria um título baseado nos usuários
+                        usernames = [u.get('username') for u in users if u.get('username')]
+                        thread_title = f"Conversation with {', '.join(usernames)}" if usernames else "Direct Message"
+                except Exception:
+                    thread_title = "Direct Message"
+                
+                simplified.append({
+                    "thread_id": str(getattr(thread, 'id', 'unknown')),
+                    "thread_title": thread_title,
+                    "users": users,
+                    "last_message": last_message,
+                    "last_message_timestamp": last_message_timestamp,
+                })
+            except Exception as e:
+                # Se houver erro ao processar um thread específico, continua com os outros
+                print(f"Error processing thread {getattr(thread, 'id', 'unknown')}: {e}")
+                continue
         return simplified
 
     async def thread_messages(self, thread_id: str) -> Dict[str, Any]:
@@ -129,7 +150,7 @@ class InstagramSessionAdapter:
             "following_count": user.following_count,
             "media_count": user.media_count,
             "is_private": user.is_private,
-            "profile_pic_url": user.profile_pic_url,
+            "profile_pic_url": str(user.profile_pic_url) if user.profile_pic_url else '',
         }
 
     async def user_stories(self, target_username: str) -> List[Dict[str, Any]]:
@@ -142,7 +163,7 @@ class InstagramSessionAdapter:
                 "username": target_username,
                 "media_type": media_type,
                 "taken_at": story.taken_at,
-                "media_url": story.thumbnail_url,
+                "media_url": str(story.thumbnail_url) if story.thumbnail_url else '',
             })
         return result
 

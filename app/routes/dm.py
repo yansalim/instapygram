@@ -190,53 +190,54 @@ async def send_photo_dm():
     description: Sends an image via DM using base64 or URL
     security:
       - bearerAuth: []
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username:
-                type: string
-                description: Username of the account that will send the photo
-                example: "my_account"
-              toUsername:
-                type: string
-                description: Recipient username
-                example: "recipient"
-              base64:
-                type: string
-                description: Image in base64 format (data:image/jpeg;base64,...)
-                example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
-              url:
-                type: string
-                description: Image URL for download
-                example: "https://example.com/image.jpg"
-            required: 
-              - username
-              - toUsername
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: Image data (base64 or URL)
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Username of the account that will send the photo
+              example: "my_account"
+            toUsername:
+              type: string
+              description: Recipient username
+              example: "recipient"
+            base64:
+              type: string
+              description: Image in base64 format (data:image/jpeg;base64,...)
+              example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
+            url:
+              type: string
+              description: Image URL for download
+              example: "https://example.com/image.jpg"
+          required: 
+            - username
+            - toUsername
     responses:
       200:
         description: Image sent successfully
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  example: "Image sent successfully"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Image sent successfully"
       400:
         description: Error sending image
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                error:
-                  type: string
-                  example: "Error sending image via DM: Invalid URL"
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Error sending image via DM: Invalid URL"
       401:
         description: Missing or invalid authentication token
       403:

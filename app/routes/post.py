@@ -44,20 +44,65 @@ async def post_photo_feed():
     Publish photo to feed
     ---
     tags: [Post]
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username: { type: string, example: "my_account" }
-              caption: { type: string, example: "My photo in the feed!" }
-              base64: { type: string }
-              url: { type: string }
-            required: [username, caption]
+    summary: Publish photo to Instagram feed
+    description: Publishes a photo to the Instagram feed using base64 or URL
+    security:
+      - bearerAuth: []
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: Photo data (base64 or URL)
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Username of the account that will publish the photo
+              example: "my_account"
+            caption:
+              type: string
+              description: Caption for the photo
+              example: "My photo in the feed!"
+            base64:
+              type: string
+              description: Image in base64 format (data:image/jpeg;base64,...)
+              example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
+            url:
+              type: string
+              description: Image URL for download
+              example: "https://example.com/image.jpg"
+          required: 
+            - username
+            - caption
     responses:
-      200: { description: Photo published successfully }
+      200:
+        description: Photo published successfully
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Photo published to Feed"
+            media:
+              type: object
+              description: Published media information
+      400:
+        description: Error publishing photo
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "You must provide either base64 or url"
+      401:
+        description: Missing or invalid authentication token
+      403:
+        description: Invalid token
     """
     body = PhotoFeedBody.model_validate(request.get_json(force=True))
     try:
@@ -77,19 +122,60 @@ async def post_photo_story():
     Publish photo to Stories
     ---
     tags: [Post]
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              username: { type: string, example: "my_account" }
-              base64: { type: string }
-              url: { type: string }
-            required: [username]
+    summary: Publish photo to Instagram Stories
+    description: Publishes a photo to Instagram Stories using base64 or URL
+    security:
+      - bearerAuth: []
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: Photo data (base64 or URL)
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Username of the account that will publish the story
+              example: "my_account"
+            base64:
+              type: string
+              description: Image in base64 format (data:image/jpeg;base64,...)
+              example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
+            url:
+              type: string
+              description: Image URL for download
+              example: "https://example.com/image.jpg"
+          required: 
+            - username
     responses:
-      200: { description: Story with photo published }
+      200:
+        description: Story with photo published
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Story published"
+            media:
+              type: object
+              description: Published media information
+      400:
+        description: Error publishing story
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "You must provide either base64 or url"
+      401:
+        description: Missing or invalid authentication token
+      403:
+        description: Invalid token
     """
     body = PhotoStoryBody.model_validate(request.get_json(force=True))
     try:

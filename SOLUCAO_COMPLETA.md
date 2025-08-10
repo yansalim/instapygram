@@ -3,7 +3,7 @@
 ## 🎯 Problema Resolvido
 
 O problema era que o Swagger UI estava enviando requisições com o header de autorização no formato incorreto:
-- **Incorreto**: `Authorization: token`
+- **Incorreto**: `Authorization: token` (sem "Bearer")
 - **Correto**: `Authorization: Bearer token`
 
 ## 🔧 Mudanças Implementadas
