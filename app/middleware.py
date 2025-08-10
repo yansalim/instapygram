@@ -11,9 +11,15 @@ def admin_auth_required(fn):
         @wraps(fn)
         async def async_wrapper(*args, **kwargs):
             auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Bearer "):
+            if not auth_header:
                 raise UnauthorizedError("Missing authentication token")
-            token = auth_header.split(" ", 1)[1]
+            
+            # Aceita tanto "Bearer token" quanto apenas "token"
+            if auth_header.startswith("Bearer "):
+                token = auth_header.split(" ", 1)[1]
+            else:
+                token = auth_header
+                
             if not ADMIN_TOKEN or token != ADMIN_TOKEN:
                 raise ForbiddenError("Invalid token")
             return await fn(*args, **kwargs)
@@ -22,9 +28,15 @@ def admin_auth_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
+        if not auth_header:
             raise UnauthorizedError("Missing authentication token")
-        token = auth_header.split(" ", 1)[1]
+        
+        # Aceita tanto "Bearer token" quanto apenas "token"
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1]
+        else:
+            token = auth_header
+            
         if not ADMIN_TOKEN or token != ADMIN_TOKEN:
             raise ForbiddenError("Invalid token")
         return fn(*args, **kwargs)

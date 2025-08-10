@@ -30,6 +30,7 @@ def create_app():
                 "description": "Authentication token to access protected routes. Use: Bearer token"
             }
         },
+
         "security": [
             {
                 "bearerAuth": []
