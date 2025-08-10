@@ -23,7 +23,7 @@ class GetProfileBody(BaseModel):
 @admin_auth_required
 async def update_bio():
     """
-    Atualizar bio e foto de perfil
+    Update bio and profile picture
     ---
     tags: [Profile]
     requestBody:
@@ -34,12 +34,12 @@ async def update_bio():
             type: object
             properties:
               username: { type: string }
-              bio: { type: string, example: "Nova bio!" }
+              bio: { type: string, example: "New bio!" }
               url: { type: string }
               base64: { type: string }
             required: [username]
     responses:
-      200: { description: Perfil atualizado com sucesso }
+      200: { description: Profile updated successfully }
     """
     body = UpdateBioBody.model_validate(request.get_json(force=True))
     try:
@@ -54,15 +54,15 @@ async def update_bio():
                 resp.raise_for_status()
                 data = resp.content
             await client.change_profile_picture(data)
-        return jsonify({"message": "Bio e/ou foto de perfil atualizadas com sucesso"})
+        return jsonify({"message": "Bio and/or profile picture updated successfully"})
     except Exception as exc:
-        raise BadRequestError(f"Erro ao atualizar bio/foto: {exc}")
+        raise BadRequestError(f"Error updating bio/picture: {exc}")
 
 @bp.get("/<targetUsername>")
 @admin_auth_required
 async def get_profile_by_username(targetUsername: str):
     """
-    Buscar dados públicos de um perfil do Instagram
+    Get public data from an Instagram profile
     ---
     tags: [Profile]
     parameters:
@@ -75,7 +75,7 @@ async def get_profile_by_username(targetUsername: str):
         required: true
         schema: { type: string }
     responses:
-      200: { description: Dados do perfil retornados com sucesso }
+      200: { description: Profile data returned successfully }
     """
     username = request.args.get("username")
     body = GetProfileBody.model_validate({"username": username})

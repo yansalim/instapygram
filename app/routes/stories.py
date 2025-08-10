@@ -15,7 +15,7 @@ class StoriesBody(BaseModel):
 @admin_auth_required
 async def get_user_stories():
     """
-    Listar stories de um usuário
+    List user stories
     ---
     tags: [Stories]
     parameters:
@@ -28,7 +28,7 @@ async def get_user_stories():
         required: true
         schema: { type: string }
     responses:
-      200: { description: Stories obtidos com sucesso }
+      200: { description: Stories retrieved successfully }
     """
     body = StoriesBody.model_validate({
         "username": request.args.get("username"),

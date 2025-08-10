@@ -27,21 +27,21 @@ def buffer_from_source(b64: Optional[str], url: Optional[str]) -> bytes:
             data = b64.split(",", 1)[1] if "," in b64 else b64
             return base64.b64decode(data)
         except Exception as exc:
-            raise BadRequestError(f"Erro ao decodificar base64: {exc}")
+            raise BadRequestError(f"Error decoding base64: {exc}")
     if url:
         try:
             r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
             r.raise_for_status()
             return r.content
         except Exception as exc:
-            raise BadRequestError(f"Erro ao baixar mídia da URL: {exc}")
-    raise BadRequestError("Nem base64 nem url fornecidos.")
+            raise BadRequestError(f"Error downloading media from URL: {exc}")
+    raise BadRequestError("Neither base64 nor url provided.")
 
 @bp.post("/photo-feed")
 @admin_auth_required
 async def post_photo_feed():
     """
-    Publicar foto no feed
+    Publish photo to feed
     ---
     tags: [Post]
     requestBody:
@@ -51,22 +51,22 @@ async def post_photo_feed():
           schema:
             type: object
             properties:
-              username: { type: string, example: "minha_conta" }
-              caption: { type: string, example: "Minha foto no feed!" }
+              username: { type: string, example: "my_account" }
+              caption: { type: string, example: "My photo in the feed!" }
               base64: { type: string }
               url: { type: string }
             required: [username, caption]
     responses:
-      200: { description: Foto publicada com sucesso }
+      200: { description: Photo published successfully }
     """
     body = PhotoFeedBody.model_validate(request.get_json(force=True))
     try:
         if not body.base64 and not body.url:
-            raise BadRequestError("Você deve informar ao menos base64 ou url")
+            raise BadRequestError("You must provide either base64 or url")
         client = await resume_session(body.username)
         buffer = buffer_from_source(body.base64, body.url)
         result = await client.publish_photo(buffer, caption=body.caption)
-        return jsonify({"message": "Foto publicada no Feed", "media": result})
+        return jsonify({"message": "Photo published to Feed", "media": result})
     except Exception as exc:
         raise BadRequestError(str(exc))
 
@@ -74,7 +74,7 @@ async def post_photo_feed():
 @admin_auth_required
 async def post_photo_story():
     """
-    Publicar foto nos Stories
+    Publish photo to Stories
     ---
     tags: [Post]
     requestBody:
@@ -84,20 +84,20 @@ async def post_photo_story():
           schema:
             type: object
             properties:
-              username: { type: string, example: "minha_conta" }
+              username: { type: string, example: "my_account" }
               base64: { type: string }
               url: { type: string }
             required: [username]
     responses:
-      200: { description: Story com foto publicado }
+      200: { description: Story with photo published }
     """
     body = PhotoStoryBody.model_validate(request.get_json(force=True))
     try:
         if not body.base64 and not body.url:
-            raise BadRequestError("Você deve informar ao menos base64 ou url")
+            raise BadRequestError("You must provide either base64 or url")
         client = await resume_session(body.username)
         buffer = buffer_from_source(body.base64, body.url)
         result = await client.publish_story_photo(buffer)
-        return jsonify({"message": "Story publicado", "media": result})
+        return jsonify({"message": "Story published", "media": result})
     except Exception as exc:
         raise BadRequestError(str(exc))

@@ -28,18 +28,18 @@ class SendPhotoDMBody(BaseModel):
     @classmethod
     def validate_input(cls, v, values):
         if (not v) and (not values.data.get("base64")):
-            raise ValueError("Você deve informar ao menos base64 ou url")
+            raise ValueError("You must provide either base64 or url")
         return v
 
 @bp.post("/send")
 @admin_auth_required
 def send_text_dm():
     """
-    Enviar DM de texto
+    Send text DM
     ---
     tags: [DM]
-    summary: Enviar mensagem de texto por DM
-    description: Envia uma mensagem de texto para um usuário específico
+    summary: Send text message via DM
+    description: Sends a text message to a specific user
     security:
       - bearerAuth: []
     consumes:
@@ -49,67 +49,67 @@ def send_text_dm():
     parameters:
       - in: body
         name: body
-        description: Dados da mensagem
+        description: Message data
         required: true
         schema:
           type: object
           properties:
             username:
               type: string
-              description: Nome de usuário da conta que enviará a mensagem
-              example: "minha_conta"
+              description: Username of the account that will send the message
+              example: "my_account"
             toUsername:
               type: string
-              description: Nome de usuário do destinatário
-              example: "destinatario"
+              description: Recipient username
+              example: "recipient"
             message:
               type: string
-              description: Mensagem a ser enviada
-              example: "Olá! Como você está?"
+              description: Message to be sent
+              example: "Hello! How are you?"
           required: 
             - username
             - toUsername
             - message
     responses:
       200:
-        description: DM enviada com sucesso
+        description: DM sent successfully
         schema:
           type: object
           properties:
             message:
               type: string
-              example: "DM enviada"
+              example: "DM sent"
       400:
-        description: Erro ao enviar DM
+        description: Error sending DM
         schema:
           type: object
           properties:
             error:
               type: string
-              example: "Erro ao enviar DM: Sessão não encontrada"
+              example: "Error sending DM: Session not found"
       401:
-        description: Token de autenticação ausente ou inválido
+        description: Missing or invalid authentication token
       403:
-        description: Token inválido
+        description: Invalid token
     """
     import asyncio
     body = SendDMBody.model_validate(request.get_json(force=True))
     try:
         client = asyncio.run(resume_session(body.username))
         asyncio.run(client.send_text_dm(body.toUsername, body.message))
-        return jsonify({"message": "DM enviada"})
+        return jsonify({"message": "DM sent"})
     except Exception as exc:
-        raise BadRequestError(f"Erro ao enviar DM: {exc}")
+        raise BadRequestError(f"Error sending DM: {exc}")
 
 @bp.get("/inbox")
 @admin_auth_required
 async def get_inbox():
     """
-    Obter inbox de mensagens
+    Get message inbox
     ---
     tags: [DM]
-    summary: Listar conversas do inbox
-    description: Retorna todas as conversas de mensagens diretas
+    summary: List inbox conversations
+    description: Returns all direct message conversations
     security:
       - bearerAuth: []
     produces:
@@ -119,11 +119,11 @@ async def get_inbox():
         name: username
         required: true
         type: string
-        description: Nome de usuário da conta
-        example: "minha_conta"
+        description: Account username
+        example: "my_account"
     responses:
       200:
-        description: Lista de conversas retornada
+        description: Conversation list returned
         schema:
           type: array
           items:
@@ -134,7 +134,7 @@ async def get_inbox():
                 example: "12345678901234567"
               thread_title:
                 type: string
-                example: "Conversa com @usuario"
+                example: "Conversation with @user"
               users:
                 type: array
                 items:
@@ -142,35 +142,35 @@ async def get_inbox():
                   properties:
                     username:
                       type: string
-                      example: "usuario"
+                      example: "user"
                     full_name:
                       type: string
-                      example: "Nome Completo"
+                      example: "Full Name"
                     profile_pic_url:
                       type: string
                       example: "https://example.com/photo.jpg"
               last_message:
                 type: string
-                example: "Última mensagem da conversa"
+                example: "Last message in conversation"
               last_message_timestamp:
                 type: string
                 example: "2025-08-10T18:00:00Z"
       400:
-        description: Erro na requisição
+        description: Request error
         schema:
           type: object
           properties:
             error:
               type: string
-              example: "username é obrigatório"
+              example: "username is required"
       401:
-        description: Token de autenticação ausente ou inválido
+        description: Missing or invalid authentication token
       403:
-        description: Token inválido
+        description: Invalid token
     """
     username = request.args.get("username")
     if not username:
-        raise BadRequestError("username é obrigatório")
+        raise BadRequestError("username is required")
     body = InboxBody.model_validate({"username": username})
     try:
         client = await resume_session(body.username)
@@ -183,11 +183,11 @@ async def get_inbox():
 @admin_auth_required
 async def send_photo_dm():
     """
-    Enviar imagem por DM (base64 ou URL)
+    Send image via DM (base64 or URL)
     ---
     tags: [DM]
-    summary: Enviar foto por mensagem direta
-    description: Envia uma imagem por DM usando base64 ou URL
+    summary: Send photo via direct message
+    description: Sends an image via DM using base64 or URL
     security:
       - bearerAuth: []
     requestBody:
@@ -199,26 +199,26 @@ async def send_photo_dm():
             properties:
               username:
                 type: string
-                description: Nome de usuário da conta que enviará a foto
-                example: "minha_conta"
+                description: Username of the account that will send the photo
+                example: "my_account"
               toUsername:
                 type: string
-                description: Nome de usuário do destinatário
-                example: "destinatario"
+                description: Recipient username
+                example: "recipient"
               base64:
                 type: string
-                description: Imagem em formato base64 (data:image/jpeg;base64,...)
+                description: Image in base64 format (data:image/jpeg;base64,...)
                 example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
               url:
                 type: string
-                description: URL da imagem para download
-                example: "https://exemplo.com/imagem.jpg"
+                description: Image URL for download
+                example: "https://example.com/image.jpg"
             required: 
               - username
               - toUsername
     responses:
       200:
-        description: Imagem enviada com sucesso
+        description: Image sent successfully
         content:
           application/json:
             schema:
@@ -226,9 +226,9 @@ async def send_photo_dm():
               properties:
                 message:
                   type: string
-                  example: "Imagem enviada com sucesso"
+                  example: "Image sent successfully"
       400:
-        description: Erro ao enviar imagem
+        description: Error sending image
         content:
           application/json:
             schema:
@@ -236,11 +236,11 @@ async def send_photo_dm():
               properties:
                 error:
                   type: string
-                  example: "Erro ao enviar imagem por DM: URL inválida"
+                  example: "Error sending image via DM: Invalid URL"
       401:
-        description: Token de autenticação ausente ou inválido
+        description: Missing or invalid authentication token
       403:
-        description: Token inválido
+        description: Invalid token
     """
     body = SendPhotoDMBody.model_validate(request.get_json(force=True))
     try:
@@ -253,15 +253,15 @@ async def send_photo_dm():
             data_str = body.base64.split(",", 1)[1] if "," in body.base64 else body.base64
             data = base64.b64decode(data_str)
             await client.send_photo_dm_from_bytes(body.toUsername, data)
-        return jsonify({"message": "Imagem enviada com sucesso"})
+        return jsonify({"message": "Image sent successfully"})
     except Exception as exc:
-        raise BadRequestError(f"Erro ao enviar imagem por DM: {exc}")
+        raise BadRequestError(f"Error sending image via DM: {exc}")
 
 @bp.get("/thread/<threadId>")
 @admin_auth_required
 async def get_thread_messages(threadId: str):
     """
-    Obter mensagens da conversa
+    Get conversation messages
     ---
     tags: [DM]
     security:
@@ -277,14 +277,14 @@ async def get_thread_messages(threadId: str):
         required: true
         schema: { type: string }
     responses:
-      200: { description: Mensagens retornadas }
+      200: { description: Messages returned }
     """
     username = request.args.get("username")
     if not username:
-        raise BadRequestError("username é obrigatório")
+        raise BadRequestError("username is required")
     try:
         client = await resume_session(username)
         messages = await client.thread_messages(threadId.strip())
         return jsonify(messages)
     except Exception as exc:
-        raise BadRequestError(f"Erro ao buscar mensagens da thread {threadId}: {exc}")
+        raise BadRequestError(f"Error fetching thread messages {threadId}: {exc}")

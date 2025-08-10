@@ -1,210 +1,243 @@
-# 📸 Pipegram (Flask) - API Não Oficial do Instagram
+# �� Pipegram (Flask) - Unofficial Instagram API
 
-![Logo Pipegram](https://i.imgur.com/kKHUeGh.png)
+![Pipegram Logo](https://i.imgur.com/kKHUeGh.png)
 
-**Pipegram** é uma API **não oficial** do Instagram desenvolvida para automatizar ações comuns em contas do Instagram, com suporte a **múltiplas sessões simultâneas**. Agora reescrita em Python/Flask usando a biblioteca [instagrapi](https://subzeroid.github.io/instagrapi/).
+**Pipegram** is an **unofficial** Instagram API developed to automate common actions on Instagram accounts, with support for **multiple simultaneous sessions**. Now rewritten in Python/Flask using the [instagrapi](https://subzeroid.github.io/instagrapi/) library.
 
-A documentação interativa está disponível em `/apidocs` quando o serviço estiver rodando.
+Interactive documentation is available at `/apidocs` when the service is running.
 
-## 🚀 Tecnologias
+## 🚀 Technologies
 
 - **Python 3.11+**
-- **Flask 3.0** com suporte assíncrono
-- **[instagrapi](https://subzeroid.github.io/instagrapi/)** - Biblioteca moderna e poderosa para Instagram API
+- **Flask 3.0** with async support
+- **[instagrapi](https://subzeroid.github.io/instagrapi/)** - Modern and powerful Instagram API library
 - **Docker & Docker Compose**
-- **Swagger/Flasgger** para documentação
-- **Pydantic** para validação de dados
+- **Swagger/Flasgger** for documentation
+- **Pydantic** for data validation
 
-## ✅ Funcionalidades
+## ✅ Features
 
-### 📌 Autenticação
-- Login com username/password
-- Suporte a 2FA
-- Sessões persistentes
-- Múltiplas contas simultâneas
+### 📌 Authentication
+- Login with username/password
+- 2FA support
+- Session management (save/load)
+- Session import/export
+- Multiple account support
 
-### 📝 Postagens
-- Upload de fotos para feed
-- Upload de stories
-- Suporte a legendas
+### 💬 Direct Messages
+- Send text messages
+- Send photos (base64 or URL)
+- View inbox conversations
+- View thread messages
+- Real-time messaging
 
-### ✉️ Direct Messages
-- Envio de mensagens de texto
-- Envio de fotos por DM
-- Listagem de conversas
-- Histórico de mensagens
+### 📷 Posts & Stories
+- Upload photos to feed
+- Upload photos to stories
+- Add captions and descriptions
+- Media management
 
-### 👤 Perfil
-- Informações de usuários
-- Stories de usuários
-- Alteração de foto de perfil
-- Edição de bio
+### 👤 Profile Management
+- View user information
+- Change profile picture
+- Edit biography
+- View user stories
+- Follow/unfollow users
 
-## 🛠️ Instalação
+### 🔧 Advanced Features
+- Proxy support
+- Session persistence
+- Error handling
+- Rate limiting protection
+- Comprehensive logging
 
-### Pré-requisitos
-- Docker e Docker Compose
-- Make (opcional, para usar o Makefile)
+## 🛠️ Installation
 
-### Configuração Rápida
+### Prerequisites
+- Docker and Docker Compose
+- Make (optional, for convenience)
 
-1. **Clone o repositório:**
+### Quick Start
+
+1. **Clone the repository:**
 ```bash
 git clone <repository-url>
 cd Pipegram
 ```
 
-2. **Configure as variáveis de ambiente:**
+2. **Configure environment variables:**
 ```bash
-cp .env.example .env
-# Edite o arquivo .env com suas configurações
+# Create .env file
+echo "ADMIN_TOKEN=your_admin_token_here" > .env
 ```
 
-3. **Inicie a API:**
+3. **Start the API:**
 ```bash
-# Com Makefile
-make up
+# Using Makefile
+make start
 
-# Ou com Docker Compose
-docker compose up -d
+# Or using Docker Compose directly
+docker compose up --build -d
 ```
 
-4. **Acesse a documentação:**
+4. **Access the API:**
+- API: http://localhost:3000
+- Documentation: http://localhost:3000/apidocs
+
+## 📚 API Documentation
+
+### Authentication
+
+All protected routes require Bearer token authentication in the header:
 ```
-http://localhost:3000/apidocs
-```
-
-## 🔧 Configuração
-
-### Variáveis de Ambiente (.env)
-
-```env
-# Token de administração (obrigatório)
-ADMIN_TOKEN=seu_token_aqui
-
-# Porta da API (opcional, padrão: 3000)
-PORT=3000
+Authorization: Bearer your_admin_token_here
 ```
 
-### Uso da API
+### Main Endpoints
 
-1. **Configure o token de administração no Swagger UI**
-2. **Faça login com suas credenciais do Instagram**
-3. **Use os endpoints conforme necessário**
+#### Authentication
+- `POST /auth/login` - Login with Instagram credentials
+- `POST /auth/resume` - Resume existing session
+- `GET /auth/status` - Check session status
+- `DELETE /auth/delete` - Delete saved session
+- `POST /auth/import-session` - Import existing session
 
-## 📚 Documentação da API
+#### Direct Messages
+- `POST /dm/send` - Send text message
+- `POST /dm/send-photo` - Send photo message
+- `GET /dm/inbox` - Get inbox conversations
+- `GET /dm/thread/<threadId>` - Get thread messages
 
-### Autenticação
+#### Posts
+- `POST /post/photo` - Upload photo to feed
+- `POST /post/story` - Upload photo to story
 
-#### Login
-```http
-POST /auth/login
-Content-Type: application/json
+#### Profile
+- `GET /profile/info/<username>` - Get user information
+- `POST /profile/picture` - Change profile picture
+- `PUT /profile/bio` - Edit biography
+- `GET /profile/stories/<username>` - Get user stories
 
-{
-  "username": "seu_usuario",
-  "password": "sua_senha",
-  "proxy": "http://proxy:porta" // opcional
-}
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ADMIN_TOKEN` | Admin authentication token | `token` |
+| `PORT` | API port | `3000` |
+
+### Docker Configuration
+
+The API runs in a Docker container with:
+- Python 3.11 slim image
+- Gunicorn WSGI server
+- 2 worker processes
+- Session persistence via volume mount
+
+## 🚀 Usage Examples
+
+### 1. Login to Instagram
+```bash
+curl -X POST "http://localhost:3000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your_username",
+    "password": "your_password"
+  }'
 ```
 
-#### Verificar Status
-```http
-GET /auth/status?username=seu_usuario
-Authorization: Bearer seu_token_admin
+### 2. Send Direct Message
+```bash
+curl -X POST "http://localhost:3000/dm/send" \
+  -H "Authorization: Bearer token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your_username",
+    "toUsername": "recipient_username",
+    "message": "Hello! How are you?"
+  }'
 ```
 
-### Direct Messages
-
-#### Enviar Mensagem
-```http
-POST /dm/send
-Authorization: Bearer seu_token_admin
-Content-Type: application/json
-
-{
-  "username": "conta_origem",
-  "toUsername": "destinatario",
-  "message": "Olá!"
-}
+### 3. Send Photo via DM
+```bash
+curl -X POST "http://localhost:3000/dm/send-photo" \
+  -H "Authorization: Bearer token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your_username",
+    "toUsername": "recipient_username",
+    "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
+  }'
 ```
 
-#### Enviar Foto por DM
-```http
-POST /dm/send-photo
-Authorization: Bearer seu_token_admin
-Content-Type: application/json
-
-{
-  "username": "conta_origem",
-  "toUsername": "destinatario",
-  "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
-}
+### 4. Upload Photo to Feed
+```bash
+curl -X POST "http://localhost:3000/post/photo" \
+  -H "Authorization: Bearer token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your_username",
+    "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABA...",
+    "caption": "Amazing photo!"
+  }'
 ```
 
-#### Listar Conversas
-```http
-GET /dm/inbox?username=conta_origem
-Authorization: Bearer seu_token_admin
-```
+## 🔒 Security
 
-### Postagens
-
-#### Upload de Foto
-```http
-POST /post/photo-feed
-Authorization: Bearer seu_token_admin
-Content-Type: application/json
-
-{
-  "username": "conta_origem",
-  "caption": "Legenda da foto",
-  "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."
-}
-```
-
-## 🔒 Segurança
-
-- **Token de Administração**: Todas as operações requerem autenticação
-- **Sessões Isoladas**: Cada conta tem sua própria sessão
-- **Validação de Dados**: Todos os inputs são validados com Pydantic
-- **Tratamento de Erros**: Erros são tratados e retornados de forma segura
+- All sensitive routes require Bearer token authentication
+- Sessions are stored locally in JSON format
+- No sensitive data is logged
+- Rate limiting protection against Instagram restrictions
 
 ## 🐛 Troubleshooting
 
-### Problemas Comuns
+### Common Issues
 
-1. **Erro de Login**
-   - Verifique se as credenciais estão corretas
-   - Algumas contas podem requerer 2FA
-   - Use proxy se necessário
+1. **Login fails with "checkpoint_challenge_required"**
+   - Instagram requires additional verification (2FA/Captcha)
+   - Complete verification manually on Instagram app/website
 
-2. **Erro de Sessão**
-   - Faça login novamente
-   - Verifique se a sessão não expirou
+2. **"Session not found" error**
+   - Session may have expired
+   - Re-login to create new session
 
-3. **Erro de Rate Limit**
-   - Aguarde alguns minutos
-   - Use proxy para evitar bloqueios
+3. **Rate limiting errors**
+   - Instagram detected automated activity
+   - Wait before making more requests
+   - Consider using proxy
 
-## 📄 Licença
+### Logs
+```bash
+# View container logs
+docker compose logs api-instagram
 
-Este projeto é para fins educacionais. Use com responsabilidade e respeite os Termos de Serviço do Instagram.
+# Follow logs in real-time
+docker compose logs -f api-instagram
+```
 
-## 🤝 Contribuição
+## 🤝 Contributing
 
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## 📞 Suporte
+## 📄 License
 
-- **Documentação**: `/apidocs` quando a API estiver rodando
-- **Issues**: Abra uma issue no GitHub
-- **Telegram**: [Canal de Suporte](https://t.me/instagrapi)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## ⚠️ Disclaimer
+
+This is an **unofficial** Instagram API. Use at your own risk and in compliance with Instagram's Terms of Service. The developers are not responsible for any account restrictions or bans.
+
+## 🔗 Links
+
+- [instagrapi Documentation](https://subzeroid.github.io/instagrapi/)
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [Docker Documentation](https://docs.docker.com/)
 
 ---
 
-**⚠️ Aviso**: Esta API não é oficial e não tem afiliação com o Instagram/Meta. Use por sua conta e risco.
+**Made with ❤️ for the Instagram automation community**

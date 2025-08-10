@@ -16,7 +16,7 @@ class InstagramSessionAdapter:
         self.client.login(username, password)
 
     async def serialize(self) -> Dict[str, Any]:
-        settings = self.client.get_settings()  # dict serializável
+        settings = self.client.get_settings()  # serializable dict
         return {
             "username": self.username,
             "proxy": self.proxy or None,
@@ -27,13 +27,13 @@ class InstagramSessionAdapter:
         self.proxy = state.get("proxy")
         settings = state.get("settings")
         if not settings:
-            raise ValueError("Settings ausentes na sessão")
+            raise ValueError("Settings missing in session")
 
         self.client = Client()
         if self.proxy:
             self.client.set_proxy(self.proxy)
 
-        # CORREÇÃO: para dict => set_settings (não load_settings)
+        # FIX: for dict => set_settings (not load_settings)
         self.client.set_settings(settings)
 
     async def current_user(self) -> Dict[str, Any]:
@@ -68,7 +68,7 @@ class InstagramSessionAdapter:
 
     async def send_text_dm(self, to_username: str, message: str) -> None:
         user_id = self.client.user_id_from_username(to_username)
-        # Doc oficial instagrapi: direct_send(text, user_ids=[...])
+        # Official instagrapi doc: direct_send(text, user_ids=[...])
         self.client.direct_send(text=message, user_ids=[user_id])
 
     async def send_photo_dm_from_bytes(self, to_username: str, image_bytes: bytes) -> None:
@@ -77,7 +77,7 @@ class InstagramSessionAdapter:
             tmp.write(image_bytes)
             tmp_path = tmp.name
         try:
-            # Doc oficial: direct_send_photo(path, user_ids=[...])
+            # Official doc: direct_send_photo(path, user_ids=[...])
             self.client.direct_send_photo(path=tmp_path, user_ids=[user_id])
         finally:
             try: os.remove(tmp_path)
@@ -145,3 +145,16 @@ class InstagramSessionAdapter:
                 "media_url": story.thumbnail_url,
             })
         return result
+
+    async def change_profile_picture(self, file_bytes: bytes) -> None:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            tmp.write(file_bytes)
+            tmp_path = tmp.name
+        try:
+            self.client.account_change_picture(tmp_path)
+        finally:
+            try: os.remove(tmp_path)
+            except OSError: pass
+
+    async def edit_bio(self, bio: str) -> None:
+        self.client.account_edit(biography=bio)
