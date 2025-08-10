@@ -2,10 +2,10 @@ flask[async]==3.0.3
 flasgger==0.9.7.1
 gunicorn==22.0.0
 uvicorn==0.30.6
-pydantic==2.8.2
+pydantic==2.7.1
 asgiref==3.8.1
 requests==2.32.3
 httpx==0.27.0
 python-dotenv==1.0.1
-instagram-private-api==1.6.0
+instagrapi==2.1.2
 Pillow==10.4.0

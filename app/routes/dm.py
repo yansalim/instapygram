@@ -57,15 +57,14 @@ async def send_text_dm():
       200: { description: DM enviada }
     """
     try:
-        data = request.get_json(force=True)
-        body = SendDMBody.model_validate(data)
-        
-        client = await resume_session(body.username)
-        await client.send_text_dm(body.toUsername, body.message)
-        
-        return jsonify({"message": "DM enviada com sucesso"})
+        # Teste simples primeiro
+        try:
+            data = request.get_json(force=True)
+            return jsonify({"message": "Request válido", "data": data})
+        except Exception as json_error:
+            return jsonify({"error": f"Erro ao parsear JSON: {json_error}"}), 400
     except Exception as exc:
-        return jsonify({"error": f"Erro ao enviar DM: {exc}"}), 400
+        return jsonify({"error": f"Erro: {exc}"}), 400
 
 
 @bp.get("/inbox")
